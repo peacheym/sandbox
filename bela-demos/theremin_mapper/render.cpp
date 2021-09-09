@@ -4,9 +4,24 @@
 |  _ \|  _| | |     / _ \
 | |_) | |___| |___ / ___ \
 |____/|_____|_____/_/   \_\
+http://bela.io
 
-theremin mapper -> Based on the 'trill-bar-sound' demo from Bela organization.
+\example Trill/bar-sound
 
+Trill Bar Multitouch Theremin
+=============================
+
+This example shows how to communicate with the Trill Bar sensor using
+the Trill library.
+
+Each touch on the sensor controls the pitch and volume of an oscillator.
+
+The Trill sensor is scanned on an auxiliary task running parallel to the audio thread
+and the number of active touches, their position and size stored as global variables.
+
+Position and size for each touch are then mapped to frequency and amplitude of their
+corresponding oscillator. Changes in frequency and amplitude are smoothed using
+low pass filters to avoid artifacts.
 */
 
 #include <Bela.h>
@@ -95,7 +110,8 @@ void handler(mapper::Signal signal, float value, mapper::Time time)
 void simple_handler(mapper::Signal&& sig, int length, mapper::Type type, const void *value, mapper::Time&& t)
 {
     float *v = (float*)value;
-	rt_printf("Value: %f -> %f -> %f\n", v, &v, *v);
+	rt_printf("Value: %f\n", *v);
+    gTouchLocation[0] = *v;
 
 }
 
@@ -109,7 +125,7 @@ bool setup(BelaContext *context, void *userData)
 	touchSensor.printDetails();
 
 	// Set and schedule auxiliary task for reading sensor data from the I2C bus
-	Bela_runAuxiliaryTask(loop);
+	// Bela_runAuxiliaryTask(loop);
 
 	// Set up some libmapper metadata.
     float min = 0;
@@ -134,6 +150,9 @@ bool setup(BelaContext *context, void *userData)
 		freqFilt[i].setup(gCutOffFreq, context->audioSampleRate);
 		ampFilt[i].setup(gCutOffAmp, context->audioSampleRate);
 	}
+	
+	/*TEMPORARY -- REMOVE WHEN DONE*/
+    gTouchSize[0] = 0.4;
 
 	return true;
 }
@@ -177,4 +196,3 @@ void cleanup(BelaContext *context, void *userData)
 {
 
 }
-//
