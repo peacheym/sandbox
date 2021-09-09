@@ -4,7 +4,7 @@ import mapper as mpr
 
 # Set up libmapper objects.
 dev = mpr.device("producer")
-sig_out = dev.add_signal(mpr.DIR_OUT, "output", 1, mpr.FLT, None, 0, 100)
+sig_out = dev.add_signal(mpr.DIR_OUT, "output2d", 2, mpr.FLT, None, 0, 100)
 
 # Set up counter variables
 new_value = 0.0
@@ -19,5 +19,5 @@ while(True):
     if new_value == 0.0 or new_value == 1.0:
         direction *= -1
     
-    print(new_value)
-    sig_out.set_value(new_value)
+    print([new_value, new_value])
+    sig_out.set_value([new_value, new_value])
