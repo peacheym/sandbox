@@ -11,7 +11,7 @@ new_value = 0.0
 direction = 1
 
 while(True):
-    dev.poll(100)
+    dev.poll(500)
     
     new_value = round(new_value + 0.1 * direction, 1)
     
@@ -19,5 +19,5 @@ while(True):
     if new_value == 0.0 or new_value == 1.0:
         direction *= -1
     
-    print(new_value)
+    # print(new_value)
     sig_out.set_value(new_value)

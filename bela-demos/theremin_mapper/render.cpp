@@ -101,16 +101,10 @@ void poll(void*)
 	}
 }
 
-void handler(mapper::Signal signal, float value, mapper::Time time)
-{
-	rt_printf("Value: %f\n", value);
-}
-
-
 void simple_handler(mapper::Signal&& sig, int length, mapper::Type type, const void *value, mapper::Time&& t)
 {
     float *v = (float*)value;
-	rt_printf("Value: %f\n", *v);
+	// rt_printf("Value: %f\n", *v);
     gTouchLocation[0] = *v;
 
 }
@@ -186,9 +180,7 @@ void render(BelaContext *context, void *userData)
 	 for(unsigned int channel = 0; channel < context->audioOutChannels; channel++) {
 		 audioWrite(context, n, channel, out);
 	 }
-	 
-	 //rt_printf("Hello");
-
+     
  }
 }
 
