@@ -35,8 +35,6 @@ try:
         for y in range(480):
             for x in range(640):
                 dist = depth.get_distance(x, y)
-                print(depth.as_pose_frame(depth))
-                exit()
                 if 0 < dist and dist < 1:
                     coverage[x//10] += 1
 
