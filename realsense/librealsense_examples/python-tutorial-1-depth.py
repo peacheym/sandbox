@@ -27,6 +27,7 @@ try:
         # Calls to get_frame_data(...) and get_frame_timestamp(...) on a device will return stable values until wait_for_frames(...) is called
         frames = pipeline.wait_for_frames()
         depth = frames.get_depth_frame()
+        color = frames.get_color_frame()
         if not depth:
             continue
 
