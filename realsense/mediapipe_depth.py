@@ -11,9 +11,8 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 import mediapipe as mp
-# mp_drawing = mp.solutions.drawing_utils
-# mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
+mp_drawing = mp.solutions.drawing_utils
 
 # Configure depth and color streams
 pipeline = rs.pipeline()
@@ -55,33 +54,32 @@ try:
             frames = pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
+
             if not depth_frame or not color_frame:
+                print("Skipping Empty Frame!")
                 continue
 
-            # Convert images to numpy arrays
-            # depth_image = np.asanyarray(depth_frame.get_data()) # REMOVE FOR SPEED
+            # Convert image to numpy arrays
             color_image = np.asanyarray(color_frame.get_data())
 
-            # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-            # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(
-            #     depth_image, alpha=0.03), cv2.COLORMAP_JET) # REMOVE FOR SPEED
-
-            # depth_colormap_dim = depth_colormap.shape # REMOVE FOR SPEED
-            color_colormap_dim = color_image.shape
-
-            # If depth and color resolutions are different, resize color image to match depth image for display
-            # if depth_colormap_dim != color_colormap_dim:
-            #     resized_color_image = cv2.resize(color_image, dsize=(
-            #         depth_colormap_dim[1], depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
-            #     images = np.hstack((resized_color_image, depth_colormap))
-            # else:
-            #     images = np.hstack((color_image, depth_colormap)) # REMOVE FOR SPEED
+            # TODO: WHY DOES THIS LINE TURN ME BLUE?
+            color_image = cv2.cvtColor(cv2.flip(color_image, 1), cv2.COLOR_BGR2RGB)
 
             # Run MEDIAPIPE here.
+            color_image.flags.writeable = True
             results = hands.process(color_image)
+
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
+
+                    # ----------------------------------------
+                    # ESTIMATED HAND LANDMARKS ACCESSIBLE HERE
+                    # ----------------------------------------
+
                     print(hand_landmarks)
+
+                    mp_drawing.draw_landmarks(
+                        color_image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
             # Show images
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
