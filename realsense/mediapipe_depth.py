@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-
+"""
 ########################################################################
 # Adapted from the Open CV & Numpy Integration example from RealSense. #
 ########################################################################
-
+"""
 
 import pyrealsense2 as rs
 import numpy as np
@@ -12,6 +12,16 @@ import mediapipe as mp
 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
+
+
+def landmark_to_pixels(landmark):
+    """
+    Width: 640
+    Height: 480
+
+    @return the landmark estimation converted to a pixel tuple.
+    """
+    return int(landmark.x * 640), int(landmark.y * 480)
 
 
 def configure_realsense():
@@ -70,11 +80,14 @@ try:
                 continue
 
             # Convert image to numpy arrays
+            depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
             # TODO: WHY DOES THIS LINE TURN ME BLUE?
             color_image = cv2.cvtColor(
                 cv2.flip(color_image, 1), cv2.COLOR_BGR2RGB)
+
+            depth_image = cv2.flip(depth_image, 1)
 
             # Run MEDIAPIPE here.
             color_image.flags.writeable = True
@@ -84,17 +97,44 @@ try:
                 for hand_landmarks in results.multi_hand_landmarks:
 
                     # ----------------------------------------
-                    # ESTIMATED HAND LANDMARKS ACCESSIBLE HERE
+                    # HANDLE THE ESTIMATED HAND LANDMARKS HERE
+                    #
+                    # FYI: landmark[0] is the wrist joint.
                     # ----------------------------------------
 
-                    print(hand_landmarks)
+                    if(hand_landmarks.landmark[0]):
+                        # Convert landmark estimation to pixels within the wxh range
+                        px = landmark_to_pixels(hand_landmarks.landmark[0])
+                        # Print the depth of the wrist, as measured by the realsense
+                        print(depth_frame.get_distance(px[0], px[1]))
+                    else:
+                        print("skip")
 
                     mp_drawing.draw_landmarks(
                         color_image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
+            # -------- Handle the Depth Map Image Stuff below --------
+
+            # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(
+                depth_image, alpha=0.03), cv2.COLORMAP_JET)
+
+            depth_colormap_dim = depth_colormap.shape
+            color_colormap_dim = color_image.shape
+
+            # If depth and color resolutions are different, resize color image to match depth image for display
+            if depth_colormap_dim != color_colormap_dim:
+                resized_color_image = cv2.resize(color_image, dsize=(
+                    depth_colormap_dim[1], depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
+                images = np.hstack((resized_color_image, depth_colormap))
+            else:
+                images = np.hstack((color_image, depth_colormap))
+            # -------------------------------------------------------------------
+
+            # TODO: I'd like to draw a circle or similar on the depth image that corresponds to the estimated wrist joint.
             # Show images
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-            cv2.imshow('RealSense', color_image)
+            cv2.imshow('RealSense', images)
             cv2.waitKey(1)
 
 finally:
