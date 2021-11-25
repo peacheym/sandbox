@@ -10,18 +10,20 @@ import numpy as np
 import cv2
 import mediapipe as mp
 
+import mapper as mpr
+
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 
 
-def landmark_to_pixels(landmark):
+def landmark_to_pixels(landmark, width=640, height=480):
     """
     Width: 640
     Height: 480
 
-    @return the landmark estimation converted to a pixel tuple.
+    @return: the landmark estimation converted to a pixel tuple.
     """
-    return int(landmark.x * 640), int(landmark.y * 480)
+    return int(landmark.x * width), int(landmark.y * height)
 
 
 def configure_realsense():
@@ -61,7 +63,27 @@ def configure_realsense():
     return pipeline
 
 
+def configure_libmapper():
+    """
+    This function is used to configure a libmapper device with one signal.
+
+    @return: both the mapper device as well as the associated mapper signal.
+    """
+    mpr_dev = mpr.device("realsense")
+    mpr_sig = mpr_dev.add_signal(mpr.DIR_OUT, "wrist", 3, mpr.FLT,
+                                 "position", 0, 1000, None, lambda s, e, i, v, t: print(v))
+
+    while not mpr_dev.get_is_ready():
+        mpr_dev.poll()
+
+    print("MPR_DEV IS READY!!")
+
+    return mpr_dev, mpr_sig
+
+
 pipeline = configure_realsense()
+mpr_dev, mpr_sig = configure_libmapper()
+
 
 try:
     with mp_hands.Hands(
@@ -69,6 +91,11 @@ try:
             min_tracking_confidence=0.7) as hands:
 
         while True:
+
+            """
+            Poll the libmapper device here with non-blocking strategy
+            """
+            mpr_dev.poll(0)
 
             # Wait for a coherent pair of frames: depth and color
             frames = pipeline.wait_for_frames()
@@ -106,7 +133,10 @@ try:
                         # Convert landmark estimation to pixels within the wxh range
                         px = landmark_to_pixels(hand_landmarks.landmark[0])
                         # Print the depth of the wrist, as measured by the realsense
-                        print(depth_frame.get_distance(px[0], px[1]))
+                        try:
+                            print(depth_frame.get_distance(px[0], px[1]))
+                        except:
+                            print("skip")
                     else:
                         print("skip")
 
@@ -133,8 +163,8 @@ try:
 
             # TODO: I'd like to draw a circle or similar on the depth image that corresponds to the estimated wrist joint.
             # Show images
-            cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-            cv2.imshow('RealSense', images)
+            cv2.namedWindow('RealSense w/ libmapper', cv2.WINDOW_AUTOSIZE)
+            cv2.imshow('RealSense w/ libmapper', images)
             cv2.waitKey(1)
 
 finally:
